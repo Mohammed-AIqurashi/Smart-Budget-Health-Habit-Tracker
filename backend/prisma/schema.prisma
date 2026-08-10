@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String         @map("password_hash")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  monthlyBudget Float          @default(2000) @map("monthly_budget")
+  calorieGoal   Int            @default(2000) @map("calorie_goal")
+  currency      String         @default("USD")
+  transactions  Transaction[]
+  habits        Habit[]
+  categories    Category[]
+
+  @@map("users")
+}
+
+model Transaction {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  amount    Float
+  category  String
+  type      String   @default("expense") // 'expense' | 'income'
+  timestamp DateTime @default(now())
+  note      String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp])
+  @@map("transactions")
+}
+
+model Habit {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  metricName String   @map("metric_name") // 'calories', 'water', 'steps', etc.
+  value      Float
+  protein    Float?   // grams of protein
+  carbs      Float?   // grams of carbs
+  fat        Float?   // grams of fat
+  cost       Float?   // meal cost in currency
+  timestamp  DateTime @default(now())
+  note       String?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp])
+  @@map("habits")
+}
+
+model Category {
+  id     String @id @default(cuid())
+  name   String
+  type   String // 'expense' | 'income' | 'habit'
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([name, type, userId])
+  @@map("categories")
+}
