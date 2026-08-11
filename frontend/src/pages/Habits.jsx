@@ -31,11 +31,8 @@ const Habits = () => {
     sleep: { icon: Moon, label: tCategory('Sleep'), unit: t('hours'), color: 'text-purple-500', bg: 'bg-purple-50' },
   };
 
-  // تجميع السجلات لليوم الحالي فقط والتصفير في اليوم التالي
-  const todayStr = new Date().toDateString();
-  const todayHabits = habits.filter(h => h && h.timestamp && new Date(h.timestamp).toDateString() === todayStr);
-
-  const dailyTotals = todayHabits.reduce(
+  // تجميع السجلات الظاهرة حالياً بالجدول (سواء حسب تاريخ الفلتر أو بدون فلتر)
+  const dailyTotals = habits.reduce(
     (acc, habit) => {
       if (habit.metricName === 'calories') {
         acc.calories += habit.value || 0;

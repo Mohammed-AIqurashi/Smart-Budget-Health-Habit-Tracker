@@ -328,7 +328,28 @@ api.interceptors.response.use(
         return { data: { success: true } };
       }
 
-      return { data: { habitLogs: habitList, totalPages: 1, currentPage: 1, pagination: { page: 1, limit: habitList.length, total: habitList.length, totalPages: 1 } } };
+      // Filter habit logs by metricName, startDate, and endDate
+      const urlObj = url.includes('?') ? new URLSearchParams(url.split('?')[1]) : new URLSearchParams();
+      const filterMetric = urlObj.get('metricName') || '';
+      const filterStartDate = urlObj.get('startDate') || '';
+      const filterEndDate = urlObj.get('endDate') || '';
+
+      let filtered = [...habitList];
+      if (filterMetric) {
+        filtered = filtered.filter(h => h && h.metricName === filterMetric);
+      }
+      if (filterStartDate) {
+        const start = new Date(filterStartDate);
+        start.setHours(0, 0, 0, 0);
+        filtered = filtered.filter(h => h && h.timestamp && new Date(h.timestamp) >= start);
+      }
+      if (filterEndDate) {
+        const end = new Date(filterEndDate);
+        end.setHours(23, 59, 59, 999);
+        filtered = filtered.filter(h => h && h.timestamp && new Date(h.timestamp) <= end);
+      }
+
+      return { data: { habitLogs: filtered, totalPages: 1, currentPage: 1, pagination: { page: 1, limit: filtered.length, total: filtered.length, totalPages: 1 } } };
     }
 
     // ── Simulator ─────────────────────────────────────────────────────────────
