@@ -21,16 +21,14 @@ const QuickLogModal = ({ onClose, onSuccess }) => {
     date: today,
   });
 
-  // Habit section
+  // Habit section - تسجيل عدة عادات في نفس الوقت
   const [habitEnabled, setHabitEnabled] = useState(false);
-  const [habitData, setHabitData] = useState({
-    metricName: 'calories',
-    value: '',
-    protein: '',
-    carbs: '',
-    fat: '',
-    note: '',
-    date: today,
+  const [habitDate, setHabitDate] = useState(today);
+  const [habitMetrics, setHabitMetrics] = useState({
+    calories: { enabled: false, value: '', protein: '', carbs: '', fat: '', note: '' },
+    water:    { enabled: false, value: '', note: '' },
+    steps:    { enabled: false, value: '', note: '' },
+    sleep:    { enabled: false, value: '', note: '' },
   });
 
   const [loading, setLoading] = useState(false);
@@ -59,16 +57,9 @@ const QuickLogModal = ({ onClose, onSuccess }) => {
     ? [...defaultExpenseCategories, ...customExpenseNames.filter(n => !defaultExpenseCategories.includes(n))]
     : [...defaultIncomeCategories, ...customIncomeNames.filter(n => !defaultIncomeCategories.includes(n))];
 
-  const metricIcons = {
-    calories: Flame,
-    water: Droplets,
-    steps: Footprints,
-    sleep: Moon,
-  };
-  const MetricIcon = metricIcons[habitData.metricName] || Flame;
-
+  const anyHabitEnabled = Object.values(habitMetrics).some(m => m.enabled && m.value);
   const canSave = (financeEnabled && financeData.amount && financeData.category) ||
-    (habitEnabled && habitData.value);
+    (habitEnabled && anyHabitEnabled);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -92,16 +83,22 @@ const QuickLogModal = ({ onClose, onSuccess }) => {
         saved.push(t('finance'));
       }
 
-      if (habitEnabled && habitData.value) {
-        await api.post('/habits', {
-          metricName: habitData.metricName,
-          value: parseFloat(habitData.value),
-          protein: habitData.protein ? parseFloat(habitData.protein) : undefined,
-          carbs: habitData.carbs ? parseFloat(habitData.carbs) : undefined,
-          fat: habitData.fat ? parseFloat(habitData.fat) : undefined,
-          note: habitData.note || undefined,
-          timestamp: habitData.date ? new Date(habitData.date).toISOString() : undefined,
-        });
+      if (habitEnabled && anyHabitEnabled) {
+        const activeHabits = Object.entries(habitMetrics).filter(([, m]) => m.enabled && m.value);
+        for (const [metricName, m] of activeHabits) {
+          const payload = {
+            metricName,
+            value: parseFloat(m.value),
+            note: m.note || undefined,
+            timestamp: habitDate ? new Date(habitDate).toISOString() : undefined,
+          };
+          if (metricName === 'calories') {
+            if (m.protein) payload.protein = parseFloat(m.protein);
+            if (m.carbs) payload.carbs = parseFloat(m.carbs);
+            if (m.fat) payload.fat = parseFloat(m.fat);
+          }
+          await api.post('/habits', payload);
+        }
         saved.push(t('habit'));
       }
 
@@ -254,76 +251,154 @@ const QuickLogModal = ({ onClose, onSuccess }) => {
 
             {habitEnabled && (
               <div className="px-4 pb-4 space-y-3 border-t border-warning-100 dark:border-gray-800">
-                <div className="grid grid-cols-4 gap-1 pt-3">
-                  {[
-                    { key: 'calories', label: tCategory('Calories'), Icon: Flame, color: 'warning' },
-                    { key: 'water', label: tCategory('Water'), Icon: Droplets, color: 'blue' },
-                    { key: 'steps', label: tCategory('Steps'), Icon: Footprints, color: 'success' },
-                    { key: 'sleep', label: tCategory('Sleep'), Icon: Moon, color: 'purple' },
-                  ].map(({ key, label, Icon, color }) => (
-                    <button
-                      key={key} type="button"
-                      onClick={() => setHabitData(p => ({ ...p, metricName: key }))}
-                      className={`flex flex-col items-center gap-1 py-2 rounded-xl text-xs font-medium transition-all border ${
-                        habitData.metricName === key
-                          ? `bg-${color}-100 dark:bg-${color}-950 border-${color}-300 text-${color}-700 dark:text-${color}-300`
-                          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {label}
-                    </button>
-                  ))}
+                <div className="pt-3">
+                  <label className="label">{t('date')}</label>
+                  <input
+                    type="date" className="input"
+                    value={habitDate}
+                    onChange={e => setHabitDate(e.target.value)}
+                  />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="label">
-                      {t('value')} ({habitData.metricName === 'calories' ? t('kcal') : habitData.metricName === 'water' ? t('ml') : habitData.metricName === 'sleep' ? t('hours') : t('steps')})
-                    </label>
-                    <input
-                      type="number" step="any" min="0"
-                      placeholder="e.g. 2000" className="input"
-                      value={habitData.value}
-                      onChange={e => setHabitData(p => ({ ...p, value: e.target.value }))}
+                {/* السعرات */}
+                <div className={`rounded-xl border p-3 transition-all ${
+                  habitMetrics.calories.enabled ? 'border-warning-400 bg-warning-50/40 dark:bg-warning-950/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                }`}>
+                  <label className="flex items-center gap-2 cursor-pointer mb-2">
+                    <input type="checkbox" className="w-4 h-4 accent-amber-500 rounded"
+                      checked={habitMetrics.calories.enabled}
+                      onChange={e => setHabitMetrics(p => ({ ...p, calories: { ...p.calories, enabled: e.target.checked } }))}
                     />
-                  </div>
-                  <div>
-                    <label className="label">{t('date')}</label>
-                    <input
-                      type="date" className="input"
-                      value={habitData.date}
-                      onChange={e => setHabitData(p => ({ ...p, date: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                {habitData.metricName === 'calories' && (
-                  <div className="p-3 bg-white dark:bg-gray-800 rounded-xl border border-warning-200 dark:border-gray-700 space-y-2">
-                    <p className="text-xs font-semibold text-gray-600 dark:text-gray-300">{t('macros')}</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {['protein', 'carbs', 'fat'].map(macro => (
-                        <div key={macro}>
-                          <label className="label capitalize">{t(macro)} (g)</label>
-                          <input
-                            type="number" step="any" min="0"
-                            placeholder="0" className="input"
-                            value={habitData[macro]}
-                            onChange={e => setHabitData(p => ({ ...p, [macro]: e.target.value }))}
+                    <Flame className="w-4 h-4 text-warning-500" />
+                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tCategory('Calories')}</span>
+                  </label>
+                  {habitMetrics.calories.enabled && (
+                    <div className="space-y-2 pt-1">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="label">{t('kcal')}</label>
+                          <input type="number" step="any" min="0" placeholder="e.g. 2000" className="input"
+                            value={habitMetrics.calories.value}
+                            onChange={e => setHabitMetrics(p => ({ ...p, calories: { ...p.calories, value: e.target.value } }))}
                           />
                         </div>
-                      ))}
+                        <div>
+                          <label className="label">{t('note')} ({t('optional')})</label>
+                          <input type="text" placeholder={t('workoutExample')} className="input"
+                            value={habitMetrics.calories.note}
+                            onChange={e => setHabitMetrics(p => ({ ...p, calories: { ...p.calories, note: e.target.value } }))}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {['protein','carbs','fat'].map(macro => (
+                          <div key={macro}>
+                            <label className="label capitalize">{t(macro)} (g)</label>
+                            <input type="number" step="any" min="0" placeholder="0" className="input"
+                              value={habitMetrics.calories[macro]}
+                              onChange={e => setHabitMetrics(p => ({ ...p, calories: { ...p.calories, [macro]: e.target.value } }))}
+                            />
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
-                <div>
-                  <label className="label">{t('note')} ({t('optional')})</label>
-                  <input
-                    type="text" placeholder={t('workoutExample')} className="input"
-                    value={habitData.note}
-                    onChange={e => setHabitData(p => ({ ...p, note: e.target.value }))}
-                  />
+                {/* الماء */}
+                <div className={`rounded-xl border p-3 transition-all ${
+                  habitMetrics.water.enabled ? 'border-blue-400 bg-blue-50/40 dark:bg-blue-950/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                }`}>
+                  <label className="flex items-center gap-2 cursor-pointer mb-2">
+                    <input type="checkbox" className="w-4 h-4 accent-blue-500 rounded"
+                      checked={habitMetrics.water.enabled}
+                      onChange={e => setHabitMetrics(p => ({ ...p, water: { ...p.water, enabled: e.target.checked } }))}
+                    />
+                    <Droplets className="w-4 h-4 text-blue-500" />
+                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tCategory('Water')}</span>
+                  </label>
+                  {habitMetrics.water.enabled && (
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div>
+                        <label className="label">{t('ml')}</label>
+                        <input type="number" step="any" min="0" placeholder="e.g. 2000" className="input"
+                          value={habitMetrics.water.value}
+                          onChange={e => setHabitMetrics(p => ({ ...p, water: { ...p.water, value: e.target.value } }))}
+                        />
+                      </div>
+                      <div>
+                        <label className="label">{t('note')} ({t('optional')})</label>
+                        <input type="text" className="input"
+                          value={habitMetrics.water.note}
+                          onChange={e => setHabitMetrics(p => ({ ...p, water: { ...p.water, note: e.target.value } }))}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* الخطوات */}
+                <div className={`rounded-xl border p-3 transition-all ${
+                  habitMetrics.steps.enabled ? 'border-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                }`}>
+                  <label className="flex items-center gap-2 cursor-pointer mb-2">
+                    <input type="checkbox" className="w-4 h-4 accent-emerald-500 rounded"
+                      checked={habitMetrics.steps.enabled}
+                      onChange={e => setHabitMetrics(p => ({ ...p, steps: { ...p.steps, enabled: e.target.checked } }))}
+                    />
+                    <Footprints className="w-4 h-4 text-success-500" />
+                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tCategory('Steps')}</span>
+                  </label>
+                  {habitMetrics.steps.enabled && (
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div>
+                        <label className="label">{t('steps')}</label>
+                        <input type="number" step="1" min="0" placeholder="e.g. 8000" className="input"
+                          value={habitMetrics.steps.value}
+                          onChange={e => setHabitMetrics(p => ({ ...p, steps: { ...p.steps, value: e.target.value } }))}
+                        />
+                      </div>
+                      <div>
+                        <label className="label">{t('note')} ({t('optional')})</label>
+                        <input type="text" className="input"
+                          value={habitMetrics.steps.note}
+                          onChange={e => setHabitMetrics(p => ({ ...p, steps: { ...p.steps, note: e.target.value } }))}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* النوم */}
+                <div className={`rounded-xl border p-3 transition-all ${
+                  habitMetrics.sleep.enabled ? 'border-purple-400 bg-purple-50/40 dark:bg-purple-950/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                }`}>
+                  <label className="flex items-center gap-2 cursor-pointer mb-2">
+                    <input type="checkbox" className="w-4 h-4 accent-purple-500 rounded"
+                      checked={habitMetrics.sleep.enabled}
+                      onChange={e => setHabitMetrics(p => ({ ...p, sleep: { ...p.sleep, enabled: e.target.checked } }))}
+                    />
+                    <Moon className="w-4 h-4 text-purple-500" />
+                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tCategory('Sleep')}</span>
+                  </label>
+                  {habitMetrics.sleep.enabled && (
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div>
+                        <label className="label">{t('hours')}</label>
+                        <input type="number" step="0.5" min="0" max="24" placeholder="e.g. 8" className="input"
+                          value={habitMetrics.sleep.value}
+                          onChange={e => setHabitMetrics(p => ({ ...p, sleep: { ...p.sleep, value: e.target.value } }))}
+                        />
+                      </div>
+                      <div>
+                        <label className="label">{t('note')} ({t('optional')})</label>
+                        <input type="text" className="input"
+                          value={habitMetrics.sleep.note}
+                          onChange={e => setHabitMetrics(p => ({ ...p, sleep: { ...p.sleep, note: e.target.value } }))}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
