@@ -64,6 +64,16 @@ export const CATEGORY_COLORS = {
   'Other Income': '#84cc16',
 };
 
+const EXTRA_PALETTE = ['#f97316', '#06b6d4', '#10b981', '#a855f7', '#ec4899', '#3b82f6', '#eab308'];
+
 export const getCategoryColor = (category) => {
-  return CATEGORY_COLORS[category] || '#6366f1';
+  if (!category) return '#6366f1';
+  if (CATEGORY_COLORS[category]) return CATEGORY_COLORS[category];
+  
+  let hash = 0;
+  for (let i = 0; i < category.length; i++) {
+    hash = category.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % EXTRA_PALETTE.length;
+  return EXTRA_PALETTE[index];
 };

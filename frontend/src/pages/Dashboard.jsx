@@ -59,6 +59,7 @@ const Dashboard = () => {
 
   const translatedBreakdown = categoryBreakdown.map(item => ({
     ...item,
+    rawName: item.name,
     name: tCategory(item.name)
   }));
 
@@ -138,7 +139,7 @@ const Dashboard = () => {
                   <Pie data={translatedBreakdown} dataKey="value" nameKey="name"
                     cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={2}>
                     {translatedBreakdown.map((entry) => (
-                      <Cell key={entry.name} fill={getCategoryColor(entry.name)} />
+                      <Cell key={entry.name} fill={getCategoryColor(entry.rawName || entry.name)} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(v) => formatCurrency(v, summary.currency)}
