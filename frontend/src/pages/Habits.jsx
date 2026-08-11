@@ -31,19 +31,23 @@ const Habits = () => {
     sleep: { icon: Moon, label: tCategory('Sleep'), unit: t('hours'), color: 'text-purple-500', bg: 'bg-purple-50' },
   };
 
-  const dailyTotals = habits.reduce(
+  // تجميع السجلات لليوم الحالي فقط والتصفير في اليوم التالي
+  const todayStr = new Date().toDateString();
+  const todayHabits = habits.filter(h => h && h.timestamp && new Date(h.timestamp).toDateString() === todayStr);
+
+  const dailyTotals = todayHabits.reduce(
     (acc, habit) => {
       if (habit.metricName === 'calories') {
-        acc.calories += habit.value;
+        acc.calories += habit.value || 0;
         acc.protein += habit.protein || 0;
         acc.carbs += habit.carbs || 0;
         acc.fat += habit.fat || 0;
       } else if (habit.metricName === 'water') {
-        acc.water += habit.value;
+        acc.water += habit.value || 0;
       } else if (habit.metricName === 'steps') {
-        acc.steps += habit.value;
+        acc.steps += habit.value || 0;
       } else if (habit.metricName === 'sleep') {
-        acc.sleep += habit.value;
+        acc.sleep += habit.value || 0;
       }
       return acc;
     },
