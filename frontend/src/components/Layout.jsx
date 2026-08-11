@@ -59,6 +59,7 @@ const Layout = () => {
             key={to}
             to={to}
             end={to === '/'}
+            onClick={() => setSidebarOpen(false)}
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                 isActive
@@ -77,14 +78,14 @@ const Layout = () => {
       <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2">
         <button
           onClick={toggleTheme}
-          className="flex items-center justify-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
           {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
           {theme === 'light' ? t('darkMode') : t('lightMode')}
         </button>
         <button
           onClick={toggleLanguage}
-          className="flex items-center justify-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
           <Globe className="w-4 h-4" />
           {lang === 'en' ? 'عربي' : 'EN'}
@@ -94,7 +95,7 @@ const Layout = () => {
       {/* User info */}
       <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 flex items-center justify-center font-semibold">
+          <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 flex items-center justify-center font-semibold shrink-0">
             {getInitials(user?.email)}
           </div>
           <div className="flex-1 min-w-0">
@@ -117,22 +118,47 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
-      {/* Mobile sidebar toggle */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="lg:hidden fixed top-4 start-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700"
-      >
-        {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-      </button>
+      {/* Mobile Top App Bar */}
+      <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-xs">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-700 dark:text-gray-200"
+          >
+            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-primary-600 flex items-center justify-center">
+              <Wallet className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-sm font-bold text-gray-900 dark:text-white">Smart Budget</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            className="p-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg"
+          >
+            {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={toggleLanguage}
+            className="px-2.5 py-1 text-xs font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-lg"
+          >
+            {lang === 'en' ? 'عربي' : 'EN'}
+          </button>
+        </div>
+      </header>
 
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex fixed inset-y-0 start-0 w-72 bg-white dark:bg-gray-900 border-e border-gray-200 dark:border-gray-700 z-30">
         {sidebarContent}
       </aside>
 
-      {/* Mobile sidebar */}
+      {/* Mobile sidebar overlay */}
       {sidebarOpen && (
-        <div className="lg:hidden fixed inset-0 z-40">
+        <div className="lg:hidden fixed inset-0 z-50">
           <div
             className="absolute inset-0 bg-black/50"
             onClick={() => setSidebarOpen(false)}
@@ -144,10 +170,8 @@ const Layout = () => {
       )}
 
       {/* Main content */}
-      <main className="lg:ps-72">
-        <div className="px-6 py-8 lg:px-10 pt-20 lg:pt-8">
-          <Outlet />
-        </div>
+      <main className="lg:ps-72 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+        <Outlet />
       </main>
     </div>
   );

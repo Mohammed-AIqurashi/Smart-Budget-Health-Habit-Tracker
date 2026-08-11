@@ -119,7 +119,7 @@
   }
 
   .dark .table-header {
-    @apply text-gray-400;
+    @apply text-gray-400 bg-gray-900;
   }
 
   .table-cell {
@@ -129,6 +129,19 @@
   .dark .table-cell {
     @apply text-gray-300;
   }
+}
+
+/* Fix dark mode table row hover background */
+.dark tr:hover {
+  background-color: #1e293b !important;
+}
+
+.dark tr:hover .table-cell {
+  color: #f8fafc !important;
+}
+
+.dark .hover\:bg-gray-50:hover {
+  background-color: #1e293b !important;
 }
 
 /* Custom scrollbar */
