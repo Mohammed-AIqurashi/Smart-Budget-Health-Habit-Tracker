@@ -348,16 +348,26 @@ api.interceptors.response.use(
         catSpend['Entertainment'] = 400;
       }
 
+      // الفئات التي تم تحديد نسبة تخفيض عليها فقط
+      const activeCutbackCategories = Object.entries(cutbacks)
+        .filter(([, pct]) => Number(pct) > 0)
+        .map(([catName]) => catName);
+
       let totalCurrentSpend = 0;
       let totalOptimizedSpend = 0;
       const categorySavingsObj = {};
 
       Object.entries(catSpend).forEach(([catName, spend]) => {
-        totalCurrentSpend += Number(spend);
         const pct = cutbacks[catName] || 0;
         const saved = spend * (pct / 100);
         const opt = spend - saved;
-        totalOptimizedSpend += opt;
+
+        // إذا حدد فئات معينة فقط، نحسب إجمالي الحالي والمخفض للفئات المحددة فقط
+        if (activeCutbackCategories.length === 0 || activeCutbackCategories.includes(catName)) {
+          totalCurrentSpend += Number(spend);
+          totalOptimizedSpend += opt;
+        }
+
         categorySavingsObj[catName] = {
           current: Number(spend.toFixed(2)),
           optimized: Number(opt.toFixed(2)),
