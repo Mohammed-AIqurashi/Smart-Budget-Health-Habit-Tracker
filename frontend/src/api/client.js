@@ -301,7 +301,45 @@ api.interceptors.response.use(
         return { data: { success: true } };
       }
 
-      return { data: { transactions: txList, totalPages: 1, currentPage: 1, pagination: { page: 1, limit: txList.length, total: txList.length, totalPages: 1 } } };
+      // Filter transactions by category, type, startDate, endDate, and search
+      const queryString = url.includes('?') ? url.split('?')[1] : '';
+      const params = new URLSearchParams(queryString);
+      const category = params.get('category') || '';
+      const type = params.get('type') || '';
+      const startDate = params.get('startDate') || '';
+      const endDate = params.get('endDate') || '';
+      const search = (params.get('search') || '').toLowerCase();
+      const page = parseInt(params.get('page') || '1') || 1;
+      const limit = parseInt(params.get('limit') || '10') || 10;
+
+      let filtered = [...txList];
+      if (category) {
+        filtered = filtered.filter(t => t && t.category === category);
+      }
+      if (type) {
+        filtered = filtered.filter(t => t && t.type === type);
+      }
+      if (search) {
+        filtered = filtered.filter(t => t && (
+          (t.category || '').toLowerCase().includes(search) ||
+          (t.note || '').toLowerCase().includes(search)
+        ));
+      }
+      if (startDate) {
+        const startMs = new Date(startDate).setHours(0, 0, 0, 0);
+        filtered = filtered.filter(t => t && t.timestamp && new Date(t.timestamp).getTime() >= startMs);
+      }
+      if (endDate) {
+        const endMs = new Date(endDate).setHours(23, 59, 59, 999);
+        filtered = filtered.filter(t => t && t.timestamp && new Date(t.timestamp).getTime() <= endMs);
+      }
+
+      const total = filtered.length;
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+      const startIdx = (page - 1) * limit;
+      const paginated = filtered.slice(startIdx, startIdx + limit);
+
+      return { data: { transactions: paginated, totalPages, currentPage: page, pagination: { page, limit, total, totalPages } } };
     }
 
     // ── Habits ────────────────────────────────────────────────────────────────
@@ -329,27 +367,33 @@ api.interceptors.response.use(
       }
 
       // Filter habit logs by metricName, startDate, and endDate
-      const urlObj = url.includes('?') ? new URLSearchParams(url.split('?')[1]) : new URLSearchParams();
-      const filterMetric = urlObj.get('metricName') || '';
-      const filterStartDate = urlObj.get('startDate') || '';
-      const filterEndDate = urlObj.get('endDate') || '';
+      const queryString = url.includes('?') ? url.split('?')[1] : '';
+      const params = new URLSearchParams(queryString);
+      const filterMetric = params.get('metricName') || '';
+      const filterStartDate = params.get('startDate') || '';
+      const filterEndDate = params.get('endDate') || '';
+      const page = parseInt(params.get('page') || '1') || 1;
+      const limit = parseInt(params.get('limit') || '10') || 10;
 
       let filtered = [...habitList];
       if (filterMetric) {
         filtered = filtered.filter(h => h && h.metricName === filterMetric);
       }
       if (filterStartDate) {
-        const start = new Date(filterStartDate);
-        start.setHours(0, 0, 0, 0);
-        filtered = filtered.filter(h => h && h.timestamp && new Date(h.timestamp) >= start);
+        const startMs = new Date(filterStartDate).setHours(0, 0, 0, 0);
+        filtered = filtered.filter(h => h && h.timestamp && new Date(h.timestamp).getTime() >= startMs);
       }
       if (filterEndDate) {
-        const end = new Date(filterEndDate);
-        end.setHours(23, 59, 59, 999);
-        filtered = filtered.filter(h => h && h.timestamp && new Date(h.timestamp) <= end);
+        const endMs = new Date(filterEndDate).setHours(23, 59, 59, 999);
+        filtered = filtered.filter(h => h && h.timestamp && new Date(h.timestamp).getTime() <= endMs);
       }
 
-      return { data: { habitLogs: filtered, totalPages: 1, currentPage: 1, pagination: { page: 1, limit: filtered.length, total: filtered.length, totalPages: 1 } } };
+      const total = filtered.length;
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+      const startIdx = (page - 1) * limit;
+      const paginated = filtered.slice(startIdx, startIdx + limit);
+
+      return { data: { habitLogs: paginated, totalPages, currentPage: page, pagination: { page, limit, total, totalPages } } };
     }
 
     // ── Simulator ─────────────────────────────────────────────────────────────
