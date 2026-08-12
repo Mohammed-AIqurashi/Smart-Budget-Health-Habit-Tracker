@@ -21,7 +21,7 @@ const QuickLogModal = ({ onClose, onSuccess }) => {
     date: today,
   });
 
-  // Habit section - تسجيل عدة عادات في نفس الوقت
+  // Habit section - multi-habit support
   const [habitEnabled, setHabitEnabled] = useState(false);
   const [habitDate, setHabitDate] = useState(today);
   const [habitMetrics, setHabitMetrics] = useState({
@@ -57,9 +57,9 @@ const QuickLogModal = ({ onClose, onSuccess }) => {
     ? [...defaultExpenseCategories, ...customExpenseNames.filter(n => !defaultExpenseCategories.includes(n))]
     : [...defaultIncomeCategories, ...customIncomeNames.filter(n => !defaultIncomeCategories.includes(n))];
 
-  const anyHabitEnabled = Object.values(habitMetrics).some(m => m.enabled && m.value);
+  const anyHabitFilled = Object.values(habitMetrics).some(m => m.enabled && m.value);
   const canSave = (financeEnabled && financeData.amount && financeData.category) ||
-    (habitEnabled && anyHabitEnabled);
+    (habitEnabled && anyHabitFilled);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -83,9 +83,9 @@ const QuickLogModal = ({ onClose, onSuccess }) => {
         saved.push(t('finance'));
       }
 
-      if (habitEnabled && anyHabitEnabled) {
-        const activeHabits = Object.entries(habitMetrics).filter(([, m]) => m.enabled && m.value);
-        for (const [metricName, m] of activeHabits) {
+      if (habitEnabled && anyHabitFilled) {
+        const toSave = Object.entries(habitMetrics).filter(([, m]) => m.enabled && m.value);
+        for (const [metricName, m] of toSave) {
           const payload = {
             metricName,
             value: parseFloat(m.value),
@@ -94,8 +94,8 @@ const QuickLogModal = ({ onClose, onSuccess }) => {
           };
           if (metricName === 'calories') {
             if (m.protein) payload.protein = parseFloat(m.protein);
-            if (m.carbs) payload.carbs = parseFloat(m.carbs);
-            if (m.fat) payload.fat = parseFloat(m.fat);
+            if (m.carbs)   payload.carbs   = parseFloat(m.carbs);
+            if (m.fat)     payload.fat     = parseFloat(m.fat);
           }
           await api.post('/habits', payload);
         }
@@ -111,6 +111,9 @@ const QuickLogModal = ({ onClose, onSuccess }) => {
       setLoading(false);
     }
   };
+
+  const setMetric = (metric, field, value) =>
+    setHabitMetrics(p => ({ ...p, [metric]: { ...p[metric], [field]: value } }));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -166,49 +169,35 @@ const QuickLogModal = ({ onClose, onSuccess }) => {
             {financeEnabled && (
               <div className="px-4 pb-4 space-y-3 border-t border-primary-100 dark:border-gray-800">
                 <div className="flex gap-2 pt-3">
-                  <button
-                    type="button"
+                  <button type="button"
                     onClick={() => setFinanceData(p => ({ ...p, type: 'expense', category: '' }))}
                     className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${financeData.type === 'expense' ? 'bg-danger-500 text-white' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}
-                  >
-                    {t('expense')}
-                  </button>
-                  <button
-                    type="button"
+                  >{t('expense')}</button>
+                  <button type="button"
                     onClick={() => setFinanceData(p => ({ ...p, type: 'income', category: '' }))}
                     className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${financeData.type === 'income' ? 'bg-success-500 text-white' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}
-                  >
-                    {t('income')}
-                  </button>
+                  >{t('income')}</button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="label">{t('amount')} ({user?.currency || 'SAR'})</label>
-                    <input
-                      type="number" step="0.01" min="0"
-                      placeholder="0.00" className="input"
+                    <input type="number" step="0.01" min="0" placeholder="0.00" className="input"
                       value={financeData.amount}
-                      onChange={e => setFinanceData(p => ({ ...p, amount: e.target.value }))}
-                    />
+                      onChange={e => setFinanceData(p => ({ ...p, amount: e.target.value }))} />
                   </div>
                   <div>
                     <label className="label">{t('date')}</label>
-                    <input
-                      type="date" className="input"
+                    <input type="date" className="input"
                       value={financeData.date}
-                      onChange={e => setFinanceData(p => ({ ...p, date: e.target.value }))}
-                    />
+                      onChange={e => setFinanceData(p => ({ ...p, date: e.target.value }))} />
                   </div>
                 </div>
 
                 <div>
                   <label className="label">{t('category')}</label>
-                  <select
-                    className="input"
-                    value={financeData.category}
-                    onChange={e => setFinanceData(p => ({ ...p, category: e.target.value }))}
-                  >
+                  <select className="input" value={financeData.category}
+                    onChange={e => setFinanceData(p => ({ ...p, category: e.target.value }))}>
                     <option value="">{t('selectCategory')}</option>
                     {categories.map(cat => <option key={cat} value={cat}>{tCategory(cat)}</option>)}
                   </select>
@@ -216,11 +205,9 @@ const QuickLogModal = ({ onClose, onSuccess }) => {
 
                 <div>
                   <label className="label">{t('note')} ({t('optional')})</label>
-                  <input
-                    type="text" placeholder={t('lunchExample')} className="input"
+                  <input type="text" placeholder={t('lunchExample')} className="input"
                     value={financeData.note}
-                    onChange={e => setFinanceData(p => ({ ...p, note: e.target.value }))}
-                  />
+                    onChange={e => setFinanceData(p => ({ ...p, note: e.target.value }))} />
                 </div>
               </div>
             )}
@@ -235,7 +222,7 @@ const QuickLogModal = ({ onClose, onSuccess }) => {
             >
               <div className="flex items-center gap-2">
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${habitEnabled ? 'bg-warning-500' : 'bg-gray-300 dark:bg-gray-700'}`}>
-                  <MetricIcon className="w-4 h-4 text-white" />
+                  <Flame className="w-4 h-4 text-white" />
                 </div>
                 <span className={`font-semibold text-sm ${habitEnabled ? 'text-warning-700 dark:text-warning-400' : 'text-gray-500'}`}>
                   {t('healthHabit')}
@@ -251,53 +238,44 @@ const QuickLogModal = ({ onClose, onSuccess }) => {
 
             {habitEnabled && (
               <div className="px-4 pb-4 space-y-3 border-t border-warning-100 dark:border-gray-800">
+                {/* التاريخ */}
                 <div className="pt-3">
                   <label className="label">{t('date')}</label>
-                  <input
-                    type="date" className="input"
-                    value={habitDate}
-                    onChange={e => setHabitDate(e.target.value)}
-                  />
+                  <input type="date" className="input" value={habitDate}
+                    onChange={e => setHabitDate(e.target.value)} />
                 </div>
 
                 {/* السعرات */}
-                <div className={`rounded-xl border p-3 transition-all ${
-                  habitMetrics.calories.enabled ? 'border-warning-400 bg-warning-50/40 dark:bg-warning-950/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
-                }`}>
-                  <label className="flex items-center gap-2 cursor-pointer mb-2">
-                    <input type="checkbox" className="w-4 h-4 accent-amber-500 rounded"
+                <div className={`rounded-xl border p-3 transition-all ${habitMetrics.calories.enabled ? 'border-warning-300 bg-warning-50/50 dark:bg-warning-950/20' : 'border-gray-200 dark:border-gray-700'}`}>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" className="w-4 h-4 accent-amber-500"
                       checked={habitMetrics.calories.enabled}
-                      onChange={e => setHabitMetrics(p => ({ ...p, calories: { ...p.calories, enabled: e.target.checked } }))}
-                    />
+                      onChange={e => setMetric('calories', 'enabled', e.target.checked)} />
                     <Flame className="w-4 h-4 text-warning-500" />
-                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tCategory('Calories')}</span>
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{tCategory('Calories')}</span>
                   </label>
                   {habitMetrics.calories.enabled && (
-                    <div className="space-y-2 pt-1">
+                    <div className="mt-2 space-y-2">
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="label">{t('kcal')}</label>
                           <input type="number" step="any" min="0" placeholder="e.g. 2000" className="input"
                             value={habitMetrics.calories.value}
-                            onChange={e => setHabitMetrics(p => ({ ...p, calories: { ...p.calories, value: e.target.value } }))}
-                          />
+                            onChange={e => setMetric('calories', 'value', e.target.value)} />
                         </div>
                         <div>
                           <label className="label">{t('note')} ({t('optional')})</label>
-                          <input type="text" placeholder={t('workoutExample')} className="input"
-                            value={habitMetrics.calories.note}
-                            onChange={e => setHabitMetrics(p => ({ ...p, calories: { ...p.calories, note: e.target.value } }))}
-                          />
+                          <input type="text" className="input" value={habitMetrics.calories.note}
+                            onChange={e => setMetric('calories', 'note', e.target.value)} />
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
-                        {['protein','carbs','fat'].map(macro => (
+                        {['protein', 'carbs', 'fat'].map(macro => (
                           <div key={macro}>
                             <label className="label capitalize">{t(macro)} (g)</label>
                             <input type="number" step="any" min="0" placeholder="0" className="input"
                               value={habitMetrics.calories[macro]}
-                              onChange={e => setHabitMetrics(p => ({ ...p, calories: { ...p.calories, [macro]: e.target.value } }))}
-                            />
+                              onChange={e => setMetric('calories', macro, e.target.value)} />
                           </div>
                         ))}
                       </div>
@@ -306,100 +284,83 @@ const QuickLogModal = ({ onClose, onSuccess }) => {
                 </div>
 
                 {/* الماء */}
-                <div className={`rounded-xl border p-3 transition-all ${
-                  habitMetrics.water.enabled ? 'border-blue-400 bg-blue-50/40 dark:bg-blue-950/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
-                }`}>
-                  <label className="flex items-center gap-2 cursor-pointer mb-2">
-                    <input type="checkbox" className="w-4 h-4 accent-blue-500 rounded"
+                <div className={`rounded-xl border p-3 transition-all ${habitMetrics.water.enabled ? 'border-blue-300 bg-blue-50/50 dark:bg-blue-950/20' : 'border-gray-200 dark:border-gray-700'}`}>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" className="w-4 h-4 accent-blue-500"
                       checked={habitMetrics.water.enabled}
-                      onChange={e => setHabitMetrics(p => ({ ...p, water: { ...p.water, enabled: e.target.checked } }))}
-                    />
+                      onChange={e => setMetric('water', 'enabled', e.target.checked)} />
                     <Droplets className="w-4 h-4 text-blue-500" />
-                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tCategory('Water')}</span>
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{tCategory('Water')}</span>
                   </label>
                   {habitMetrics.water.enabled && (
-                    <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="mt-2 grid grid-cols-2 gap-2">
                       <div>
                         <label className="label">{t('ml')}</label>
                         <input type="number" step="any" min="0" placeholder="e.g. 2000" className="input"
                           value={habitMetrics.water.value}
-                          onChange={e => setHabitMetrics(p => ({ ...p, water: { ...p.water, value: e.target.value } }))}
-                        />
+                          onChange={e => setMetric('water', 'value', e.target.value)} />
                       </div>
                       <div>
                         <label className="label">{t('note')} ({t('optional')})</label>
-                        <input type="text" className="input"
-                          value={habitMetrics.water.note}
-                          onChange={e => setHabitMetrics(p => ({ ...p, water: { ...p.water, note: e.target.value } }))}
-                        />
+                        <input type="text" className="input" value={habitMetrics.water.note}
+                          onChange={e => setMetric('water', 'note', e.target.value)} />
                       </div>
                     </div>
                   )}
                 </div>
 
                 {/* الخطوات */}
-                <div className={`rounded-xl border p-3 transition-all ${
-                  habitMetrics.steps.enabled ? 'border-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
-                }`}>
-                  <label className="flex items-center gap-2 cursor-pointer mb-2">
-                    <input type="checkbox" className="w-4 h-4 accent-emerald-500 rounded"
+                <div className={`rounded-xl border p-3 transition-all ${habitMetrics.steps.enabled ? 'border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20' : 'border-gray-200 dark:border-gray-700'}`}>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" className="w-4 h-4 accent-emerald-500"
                       checked={habitMetrics.steps.enabled}
-                      onChange={e => setHabitMetrics(p => ({ ...p, steps: { ...p.steps, enabled: e.target.checked } }))}
-                    />
+                      onChange={e => setMetric('steps', 'enabled', e.target.checked)} />
                     <Footprints className="w-4 h-4 text-success-500" />
-                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tCategory('Steps')}</span>
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{tCategory('Steps')}</span>
                   </label>
                   {habitMetrics.steps.enabled && (
-                    <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="mt-2 grid grid-cols-2 gap-2">
                       <div>
                         <label className="label">{t('steps')}</label>
                         <input type="number" step="1" min="0" placeholder="e.g. 8000" className="input"
                           value={habitMetrics.steps.value}
-                          onChange={e => setHabitMetrics(p => ({ ...p, steps: { ...p.steps, value: e.target.value } }))}
-                        />
+                          onChange={e => setMetric('steps', 'value', e.target.value)} />
                       </div>
                       <div>
                         <label className="label">{t('note')} ({t('optional')})</label>
-                        <input type="text" className="input"
-                          value={habitMetrics.steps.note}
-                          onChange={e => setHabitMetrics(p => ({ ...p, steps: { ...p.steps, note: e.target.value } }))}
-                        />
+                        <input type="text" className="input" value={habitMetrics.steps.note}
+                          onChange={e => setMetric('steps', 'note', e.target.value)} />
                       </div>
                     </div>
                   )}
                 </div>
 
                 {/* النوم */}
-                <div className={`rounded-xl border p-3 transition-all ${
-                  habitMetrics.sleep.enabled ? 'border-purple-400 bg-purple-50/40 dark:bg-purple-950/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
-                }`}>
-                  <label className="flex items-center gap-2 cursor-pointer mb-2">
-                    <input type="checkbox" className="w-4 h-4 accent-purple-500 rounded"
+                <div className={`rounded-xl border p-3 transition-all ${habitMetrics.sleep.enabled ? 'border-purple-300 bg-purple-50/50 dark:bg-purple-950/20' : 'border-gray-200 dark:border-gray-700'}`}>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" className="w-4 h-4 accent-purple-500"
                       checked={habitMetrics.sleep.enabled}
-                      onChange={e => setHabitMetrics(p => ({ ...p, sleep: { ...p.sleep, enabled: e.target.checked } }))}
-                    />
+                      onChange={e => setMetric('sleep', 'enabled', e.target.checked)} />
                     <Moon className="w-4 h-4 text-purple-500" />
-                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tCategory('Sleep')}</span>
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{tCategory('Sleep')}</span>
                   </label>
                   {habitMetrics.sleep.enabled && (
-                    <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="mt-2 grid grid-cols-2 gap-2">
                       <div>
                         <label className="label">{t('hours')}</label>
                         <input type="number" step="0.5" min="0" max="24" placeholder="e.g. 8" className="input"
                           value={habitMetrics.sleep.value}
-                          onChange={e => setHabitMetrics(p => ({ ...p, sleep: { ...p.sleep, value: e.target.value } }))}
-                        />
+                          onChange={e => setMetric('sleep', 'value', e.target.value)} />
                       </div>
                       <div>
                         <label className="label">{t('note')} ({t('optional')})</label>
-                        <input type="text" className="input"
-                          value={habitMetrics.sleep.note}
-                          onChange={e => setHabitMetrics(p => ({ ...p, sleep: { ...p.sleep, note: e.target.value } }))}
-                        />
+                        <input type="text" className="input" value={habitMetrics.sleep.note}
+                          onChange={e => setMetric('sleep', 'note', e.target.value)} />
                       </div>
                     </div>
                   )}
                 </div>
+
               </div>
             )}
           </div>
@@ -410,9 +371,7 @@ const QuickLogModal = ({ onClose, onSuccess }) => {
             className="w-full btn-primary py-3 text-base disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Save className="w-5 h-5" />
-            {loading
-              ? t('saving')
-              : `${t('save')} ${[financeEnabled && financeData.amount && financeData.category ? t('finance') : '', habitEnabled && habitData.value ? t('habit') : ''].filter(Boolean).join(' + ') || ''}`}
+            {loading ? t('saving') : t('save')}
           </button>
         </form>
       </div>
