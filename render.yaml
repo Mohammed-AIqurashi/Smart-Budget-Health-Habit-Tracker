@@ -1,0 +1,36 @@
+services:
+  # Backend Web Service
+  - type: web
+    name: smart-budget-backend
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: cd backend && npm install && npx prisma generate && npx prisma db push
+    startCommand: cd backend && npm start
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_uTzrkQW7Bbc0@ep-polished-violet-a57r157q-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+      - key: RENDER_EXTERNAL_URL
+        value: https://smart-budget-backend-aokn.onrender.com
+
+  # Frontend Static Site
+  - type: web
+    name: smart-budget-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://smart-budget-backend-aokn.onrender.com/api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

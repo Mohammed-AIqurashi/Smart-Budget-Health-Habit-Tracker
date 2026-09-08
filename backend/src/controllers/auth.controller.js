@@ -14,7 +14,18 @@ const generateTokens = (userId) => {
 
 export const register = async (req, res) => {
   try {
-    const { email, password, monthlyBudget, calorieGoal, currency } = req.body;
+    const {
+      email,
+      password,
+      monthlyBudget,
+      calorieGoal,
+      proteinGoal,
+      carbsGoal,
+      fatGoal,
+      waterGoal,
+      stepsGoal,
+      currency,
+    } = req.body;
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -28,8 +39,13 @@ export const register = async (req, res) => {
       data: {
         email,
         passwordHash,
-        monthlyBudget: monthlyBudget || 2000,
-        calorieGoal: calorieGoal || 2000,
+        monthlyBudget: monthlyBudget ? parseFloat(monthlyBudget) : 2000,
+        calorieGoal: calorieGoal ? parseInt(calorieGoal) : 2000,
+        proteinGoal: proteinGoal ? parseFloat(proteinGoal) : null,
+        carbsGoal: carbsGoal ? parseFloat(carbsGoal) : null,
+        fatGoal: fatGoal ? parseFloat(fatGoal) : null,
+        waterGoal: waterGoal ? parseFloat(waterGoal) : null,
+        stepsGoal: stepsGoal ? parseFloat(stepsGoal) : null,
         currency: currency || 'USD',
       },
       select: {
@@ -37,6 +53,13 @@ export const register = async (req, res) => {
         email: true,
         monthlyBudget: true,
         calorieGoal: true,
+        proteinGoal: true,
+        carbsGoal: true,
+        fatGoal: true,
+        waterGoal: true,
+        stepsGoal: true,
+        sleepGoal: true,
+        fitnessMode: true,
         currency: true,
         createdAt: true,
       },
@@ -98,6 +121,13 @@ export const login = async (req, res) => {
         email: user.email,
         monthlyBudget: user.monthlyBudget,
         calorieGoal: user.calorieGoal,
+        proteinGoal: user.proteinGoal,
+        carbsGoal: user.carbsGoal,
+        fatGoal: user.fatGoal,
+        waterGoal: user.waterGoal,
+        stepsGoal: user.stepsGoal,
+        sleepGoal: user.sleepGoal,
+        fitnessMode: user.fitnessMode || 'cutting',
         currency: user.currency,
         createdAt: user.createdAt,
       },

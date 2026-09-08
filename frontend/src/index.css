@@ -7,7 +7,7 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-gray-50/70 text-gray-900 antialiased;
     font-family: 'Inter', system-ui, sans-serif;
   }
 
@@ -31,91 +31,91 @@
 
 @layer components {
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-colors duration-300;
+    @apply bg-white rounded-2xl shadow-sm border border-gray-100 p-6 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5;
   }
 
   .dark .card {
-    @apply bg-gray-900 border-gray-700;
+    @apply bg-gray-900/90 border-gray-800/80 shadow-none hover:border-gray-700/80;
   }
 
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+    @apply btn bg-gradient-to-r from-primary-600 to-primary-500 text-white hover:from-primary-700 hover:to-primary-600 focus:ring-primary-500 shadow-sm shadow-primary-500/20;
   }
 
   .btn-secondary {
-    @apply btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-gray-400;
+    @apply btn bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 focus:ring-gray-300 shadow-sm;
   }
 
   .dark .btn-secondary {
-    @apply bg-gray-800 text-gray-200 border-gray-600 hover:bg-gray-700;
+    @apply bg-gray-800/80 text-gray-200 border-gray-700 hover:bg-gray-700;
   }
 
   .btn-danger {
-    @apply btn bg-danger-600 text-white hover:bg-danger-700 focus:ring-danger-500;
+    @apply btn bg-gradient-to-r from-danger-600 to-danger-500 text-white hover:from-danger-700 hover:to-danger-600 focus:ring-danger-500 shadow-sm shadow-danger-500/20;
   }
 
   .btn-success {
-    @apply btn bg-success-600 text-white hover:bg-success-700 focus:ring-success-500;
+    @apply btn bg-gradient-to-r from-success-600 to-success-500 text-white hover:from-success-700 hover:to-success-600 focus:ring-success-500 shadow-sm shadow-success-500/20;
   }
 
   .input {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors;
+    @apply w-full px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm;
   }
 
   .dark .input {
-    @apply bg-gray-800 border-gray-600 text-gray-100;
+    @apply bg-gray-800/80 border-gray-700 text-gray-100 placeholder-gray-500;
   }
 
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+    @apply block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wider;
   }
 
   .dark .label {
-    @apply text-gray-300;
+    @apply text-gray-100 font-medium;
   }
 
   .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold;
   }
 
   .badge-success {
-    @apply badge bg-success-100 text-success-700;
+    @apply badge bg-success-50 text-success-700;
   }
 
   .dark .badge-success {
-    @apply bg-[#14532d]/30 text-success-300;
+    @apply bg-success-900/30 text-success-300;
   }
 
   .badge-danger {
-    @apply badge bg-danger-100 text-danger-700;
+    @apply badge bg-danger-50 text-danger-700;
   }
 
   .dark .badge-danger {
-    @apply bg-[#7f1d1d]/30 text-danger-300;
+    @apply bg-danger-900/30 text-danger-300;
   }
 
   .badge-warning {
-    @apply badge bg-warning-100 text-warning-700;
+    @apply badge bg-warning-50 text-warning-700;
   }
 
   .dark .badge-warning {
-    @apply bg-[#78350f]/30 text-warning-300;
+    @apply bg-warning-900/30 text-warning-300;
   }
 
   .badge-primary {
-    @apply badge bg-primary-100 text-primary-700;
+    @apply badge bg-primary-50 text-primary-700;
   }
 
   .dark .badge-primary {
-    @apply bg-[#1e3a8a]/30 text-primary-300;
+    @apply bg-primary-900/30 text-primary-300;
   }
 
   .table-header {
-    @apply px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider;
+    @apply px-4 py-3.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50/50 dark:bg-gray-850/40;
   }
 
   .dark .table-header {
@@ -123,7 +123,7 @@
   }
 
   .table-cell {
-    @apply px-4 py-3 whitespace-nowrap text-sm text-gray-700;
+    @apply px-4 py-3.5 whitespace-nowrap text-sm text-gray-700;
   }
 
   .dark .table-cell {
@@ -131,34 +131,42 @@
   }
 }
 
+/* Fix dark mode table row hover background */
+.dark tr:hover {
+  background-color: #1e293b !important;
+}
+
+.dark tr:hover .table-cell {
+  color: #f8fafc !important;
+}
+
+.dark .hover\:bg-gray-50:hover {
+  background-color: #1e293b !important;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-.dark ::-webkit-scrollbar-track {
-  background: #1f2937;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
+  background: #cbd5e1;
+  border-radius: 9999px;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #4b5563;
+  background: #334155;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: #94a3b8;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
+  background: #475569;
 }

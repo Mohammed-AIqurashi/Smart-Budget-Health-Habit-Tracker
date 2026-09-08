@@ -38,10 +38,8 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       return { success: true, user: userData };
     } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Login failed. Please try again.',
-      };
+      const message = error.response?.data?.message || error.message || 'Login failed';
+      return { success: false, message };
     } finally {
       setLoading(false);
     }
@@ -58,10 +56,8 @@ export const AuthProvider = ({ children }) => {
       setUser(newUser);
       return { success: true, user: newUser };
     } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Registration failed. Please try again.',
-      };
+      const message = error.response?.data?.message || error.message || 'Registration failed';
+      return { success: false, message };
     } finally {
       setLoading(false);
     }

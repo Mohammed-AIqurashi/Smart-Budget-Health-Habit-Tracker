@@ -1,15 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Search,
-  Plus,
-  Pencil,
-  Trash2,
-  Download,
-  ChevronLeft,
-  ChevronRight,
-  ArrowUpRight,
-  ArrowDownRight,
-  X,
+  Search, Plus, Pencil, Trash2, Download, ChevronLeft, ChevronRight,
+  ArrowUpRight, ArrowDownRight, X,
 } from 'lucide-react';
 import api from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -17,10 +9,13 @@ import QuickLogModal from '../components/QuickLogModal.jsx';
 import EditTransactionModal from '../components/EditTransactionModal.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import { formatCurrency, formatDateTime, getCategoryColor } from '../utils/format.js';
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 const Transactions = () => {
+  const { t, tCategory } = useLanguage();
   const { user } = useAuth();
   const [transactions, setTransactions] = useState([]);
+  const [customCategories, setCustomCategories] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
   const [filters, setFilters] = useState({
     search: '',
@@ -35,11 +30,27 @@ const Transactions = () => {
   const [editingTx, setEditingTx] = useState(null);
   const [deletingTx, setDeletingTx] = useState(null);
 
-  const categories = ['Food & Dining', 'Transportation', 'Housing', 'Entertainment', 'Shopping', 'Health', 'Education', 'Other', 'Salary', 'Freelance', 'Gift', 'Other Income'];
+  const defaultCategories = ['Food & Dining', 'Transportation', 'Housing', 'Entertainment', 'Shopping', 'Health', 'Education', 'Other', 'Salary', 'Freelance', 'Gift', 'Other Income'];
+  const allCategories = [
+    ...defaultCategories,
+    ...customCategories.map(c => c.name).filter(n => !defaultCategories.includes(n))
+  ];
+
+  useEffect(() => {
+    const fetchCustom = async () => {
+      try {
+        const res = await api.get('/users/categories');
+        setCustomCategories(Array.isArray(res.data) ? res.data : res.data?.categories || []);
+      } catch {
+        setCustomCategories([]);
+      }
+    };
+    fetchCustom();
+  }, []);
 
   const fetchTransactions = useCallback(async () => {
     try {
-      setLoading(true);
+      if (transactions.length === 0) setLoading(true);
       const params = new URLSearchParams({
         page: pagination.page,
         limit: pagination.limit,
@@ -51,14 +62,19 @@ const Transactions = () => {
       if (filters.endDate) params.append('endDate', filters.endDate);
 
       const response = await api.get(`/transactions?${params.toString()}`);
-      setTransactions(response.data.transactions);
-      setPagination(response.data.pagination);
+      setTransactions(response.data.transactions || []);
+      setPagination(response.data.pagination || {
+        page: response.data.currentPage || 1,
+        limit: 10,
+        total: (response.data.transactions || []).length,
+        totalPages: response.data.totalPages || 1,
+      });
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load transactions');
+      setError(err.response?.data?.message || t('failedLoad'));
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, filters]);
+  }, [pagination.page, pagination.limit, filters, t]);
 
   useEffect(() => {
     fetchTransactions();
@@ -80,7 +96,7 @@ const Transactions = () => {
       setDeletingTx(null);
       fetchTransactions();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to delete transaction');
+      setError(err.response?.data?.message || t('failedLoad'));
     }
   };
 
@@ -115,19 +131,17 @@ const Transactions = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
-          <p className="text-gray-600 mt-1">
-            View, filter, and manage all your financial transactions.
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('transactionsTitle')}</h1>
+          <p className="text-gray-600 mt-1">{t('transactionsSubtitle')}</p>
         </div>
         <div className="flex gap-2">
           <button onClick={handleExportCSV} className="btn-secondary" disabled={transactions.length === 0}>
             <Download className="w-4 h-4" />
-            Export CSV
+            {t('exportCSV')}
           </button>
           <button onClick={() => setShowQuickLog(true)} className="btn-primary">
             <Plus className="w-4 h-4" />
-            Add Transaction
+            {t('addTransaction')}
           </button>
         </div>
       </div>
@@ -143,13 +157,52 @@ const Transactions = () => {
 
       {/* Filters */}
       <div className="card">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* Quick Type Filter Pills */}
+        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+          <button
+            type="button"
+            onClick={() => handleFilterChange('type', '')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+              !filters.type
+                ? 'bg-primary-600 text-white shadow-sm shadow-primary-500/20'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+            }`}
+          >
+            {t('allTypes')}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleFilterChange('type', 'expense')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+              filters.type === 'expense'
+                ? 'bg-danger-600 text-white shadow-sm shadow-danger-500/20'
+                : 'bg-danger-50 dark:bg-danger-900/30 text-danger-700 dark:text-danger-300 hover:bg-danger-100 dark:hover:bg-danger-900/50'
+            }`}
+          >
+            <ArrowDownRight className="w-3.5 h-3.5" />
+            {t('expense')}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleFilterChange('type', 'income')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+              filters.type === 'income'
+                ? 'bg-success-600 text-white shadow-sm shadow-success-500/20'
+                : 'bg-success-50 dark:bg-success-900/30 text-success-700 dark:text-success-300 hover:bg-success-100 dark:hover:bg-success-900/50'
+            }`}
+          >
+            <ArrowUpRight className="w-3.5 h-3.5" />
+            {t('income')}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           <div className="relative">
-            <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
+            <Search className="absolute start-3 top-3 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search..."
-              className="input pl-10"
+              placeholder={t('search')}
+              className="input ps-9"
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
             />
@@ -159,19 +212,10 @@ const Transactions = () => {
             value={filters.category}
             onChange={(e) => handleFilterChange('category', e.target.value)}
           >
-            <option value="">All Categories</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
+            <option value="">{t('allCategories')}</option>
+            {allCategories.map((cat) => (
+              <option key={cat} value={cat}>{tCategory(cat)}</option>
             ))}
-          </select>
-          <select
-            className="input"
-            value={filters.type}
-            onChange={(e) => handleFilterChange('type', e.target.value)}
-          >
-            <option value="">All Types</option>
-            <option value="expense">Expense</option>
-            <option value="income">Income</option>
           </select>
           <input
             type="date"
@@ -187,8 +231,8 @@ const Transactions = () => {
           />
         </div>
         {hasFilters && (
-          <button onClick={handleClearFilters} className="mt-4 text-sm text-primary-600 font-medium hover:text-primary-700">
-            Clear filters
+          <button onClick={handleClearFilters} className="mt-3.5 text-xs text-primary-600 dark:text-primary-400 font-semibold hover:underline">
+            {t('clearFilters')}
           </button>
         )}
       </div>
@@ -196,18 +240,18 @@ const Transactions = () => {
       {/* Data grid */}
       <div className="card p-0 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+            <thead className="bg-gray-50 dark:bg-gray-900">
               <tr>
-                <th className="table-header">Category</th>
-                <th className="table-header">Note</th>
-                <th className="table-header">Date</th>
-                <th className="table-header">Type</th>
-                <th className="table-header text-right">Amount</th>
-                <th className="table-header text-right">Actions</th>
+                <th className="table-header">{t('category')}</th>
+                <th className="table-header">{t('note')}</th>
+                <th className="table-header">{t('date')}</th>
+                <th className="table-header">{t('type')}</th>
+                <th className="table-header text-right">{t('amount')}</th>
+                <th className="table-header text-right">{t('actions')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-12 text-center">
@@ -217,40 +261,40 @@ const Transactions = () => {
               ) : transactions.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
-                    <p>No transactions found.</p>
+                    <p>{t('noTransactionsFound')}</p>
                     {!hasFilters && (
-                      <p className="text-sm mt-1">Start logging your first transaction!</p>
+                      <p className="text-sm mt-1">{t('startLogging')}</p>
                     )}
                   </td>
                 </tr>
               ) : (
                 transactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-gray-50">
+                  <tr key={tx.id} className="hover:bg-gray-50 dark:hover:bg-slate-800">
                     <td className="table-cell">
                       <span className="inline-flex items-center gap-2">
                         <span
                           className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: getCategoryColor(tx.category) }}
                         />
-                        {tx.category}
+                        {tCategory(tx.category)}
                       </span>
                     </td>
-                    <td className="table-cell text-gray-500">{tx.note || '—'}</td>
-                    <td className="table-cell text-gray-500">{formatDateTime(tx.timestamp)}</td>
+                    <td className="table-cell text-gray-500 dark:text-gray-400">{tx.note || '—'}</td>
+                    <td className="table-cell text-gray-500 dark:text-gray-400">{formatDateTime(tx.timestamp)}</td>
                     <td className="table-cell">
                       {tx.type === 'income' ? (
                         <span className="inline-flex items-center gap-1 badge-success">
                           <ArrowUpRight className="w-3 h-3" />
-                          Income
+                          {t('income')}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 badge-danger">
                           <ArrowDownRight className="w-3 h-3" />
-                          Expense
+                          {t('expense')}
                         </span>
                       )}
                     </td>
-                    <td className={`table-cell text-right font-medium ${tx.type === 'income' ? 'text-success-600' : 'text-gray-900'}`}>
+                    <td className={`table-cell text-right font-medium ${tx.type === 'income' ? 'text-success-600' : 'text-gray-900 dark:text-gray-100'}`}>
                       {tx.type === 'income' ? '+' : '-'}
                       {formatCurrency(tx.amount, user?.currency)}
                     </td>
@@ -279,10 +323,10 @@ const Transactions = () => {
 
         {/* Pagination */}
         {!loading && transactions.length > 0 && (
-          <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between bg-gray-50">
-            <p className="text-sm text-gray-600">
-              Showing {((pagination.page - 1) * pagination.limit) + 1}-
-              {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between bg-gray-50 dark:bg-gray-900">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {t('showing')} {((pagination.page - 1) * pagination.limit) + 1}-
+              {Math.min(pagination.page * pagination.limit, pagination.total)} {t('of')} {pagination.total}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -291,17 +335,17 @@ const Transactions = () => {
                 className="btn-secondary text-sm py-1.5 px-3"
               >
                 <ChevronLeft className="w-4 h-4" />
-                Prev
+                {t('prev')}
               </button>
-              <span className="text-sm text-gray-600">
-                Page {pagination.page} of {pagination.totalPages}
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {t('page')} {pagination.page} {t('of')} {pagination.totalPages}
               </span>
               <button
                 onClick={() => setPagination((prev) => ({ ...prev, page: Math.min(prev.totalPages, prev.page + 1) }))}
                 disabled={pagination.page === pagination.totalPages}
                 className="btn-secondary text-sm py-1.5 px-3"
               >
-                Next
+                {t('next')}
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -329,9 +373,9 @@ const Transactions = () => {
 
       {deletingTx && (
         <ConfirmDialog
-          title="Delete Transaction"
-          message={`Are you sure you want to delete this ${deletingTx.type} of ${formatCurrency(deletingTx.amount, user?.currency)}?`}
-          confirmLabel="Delete"
+          title={t('deleteTransaction')}
+          message={`${t('deleteTransactionMsg')} ${deletingTx.type} of ${formatCurrency(deletingTx.amount, user?.currency)}?`}
+          confirmLabel={t('delete')}
           onConfirm={handleDelete}
           onCancel={() => setDeletingTx(null)}
         />

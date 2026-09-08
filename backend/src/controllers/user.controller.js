@@ -9,6 +9,13 @@ export const getProfile = async (req, res) => {
         email: true,
         monthlyBudget: true,
         calorieGoal: true,
+        proteinGoal: true,
+        carbsGoal: true,
+        fatGoal: true,
+        waterGoal: true,
+        stepsGoal: true,
+        sleepGoal: true,
+        fitnessMode: true,
         currency: true,
         createdAt: true,
       },
@@ -23,13 +30,31 @@ export const getProfile = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { monthlyBudget, calorieGoal, currency } = req.body;
+    const {
+      monthlyBudget,
+      calorieGoal,
+      proteinGoal,
+      carbsGoal,
+      fatGoal,
+      waterGoal,
+      stepsGoal,
+      sleepGoal,
+      fitnessMode,
+      currency,
+    } = req.body;
 
     const user = await prisma.user.update({
       where: { id: req.user.id },
       data: {
         ...(monthlyBudget !== undefined && { monthlyBudget: parseFloat(monthlyBudget) }),
         ...(calorieGoal !== undefined && { calorieGoal: parseInt(calorieGoal) }),
+        ...(proteinGoal !== undefined && { proteinGoal: proteinGoal === null || proteinGoal === '' ? null : parseFloat(proteinGoal) }),
+        ...(carbsGoal !== undefined && { carbsGoal: carbsGoal === null || carbsGoal === '' ? null : parseFloat(carbsGoal) }),
+        ...(fatGoal !== undefined && { fatGoal: fatGoal === null || fatGoal === '' ? null : parseFloat(fatGoal) }),
+        ...(waterGoal !== undefined && { waterGoal: waterGoal === null || waterGoal === '' ? null : parseFloat(waterGoal) }),
+        ...(stepsGoal !== undefined && { stepsGoal: stepsGoal === null || stepsGoal === '' ? null : parseFloat(stepsGoal) }),
+        ...(sleepGoal !== undefined && { sleepGoal: sleepGoal === null || sleepGoal === '' ? null : parseFloat(sleepGoal) }),
+        ...(fitnessMode !== undefined && { fitnessMode }),
         ...(currency !== undefined && { currency }),
       },
       select: {
@@ -37,6 +62,13 @@ export const updateProfile = async (req, res) => {
         email: true,
         monthlyBudget: true,
         calorieGoal: true,
+        proteinGoal: true,
+        carbsGoal: true,
+        fatGoal: true,
+        waterGoal: true,
+        stepsGoal: true,
+        sleepGoal: true,
+        fitnessMode: true,
         currency: true,
         createdAt: true,
       },

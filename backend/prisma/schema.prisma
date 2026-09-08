@@ -14,6 +14,13 @@ model User {
   createdAt     DateTime       @default(now()) @map("created_at")
   monthlyBudget Float          @default(2000) @map("monthly_budget")
   calorieGoal   Int            @default(2000) @map("calorie_goal")
+  proteinGoal   Float?         @map("protein_goal")
+  carbsGoal     Float?         @map("carbs_goal")
+  fatGoal       Float?         @map("fat_goal")
+  waterGoal     Float?         @map("water_goal")
+  stepsGoal     Float?         @map("steps_goal")
+  sleepGoal     Float?         @map("sleep_goal")
+  fitnessMode   String         @default("cutting") @map("fitness_mode")
   currency      String         @default("USD")
   transactions  Transaction[]
   habits        Habit[]

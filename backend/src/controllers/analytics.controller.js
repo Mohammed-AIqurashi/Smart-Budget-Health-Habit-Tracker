@@ -43,8 +43,11 @@ export const getDashboard = async (req, res) => {
       .filter((t) => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const remainingBudget = req.user.monthlyBudget - totalExpenses;
-    const budgetPercentage = Math.min((totalExpenses / req.user.monthlyBudget) * 100, 100);
+    const effectiveBudget = req.user.monthlyBudget + totalIncome;
+    const remainingBudget = Math.max(0, effectiveBudget - totalExpenses);
+    const budgetPercentage = effectiveBudget > 0
+      ? Math.min((totalExpenses / effectiveBudget) * 100, 100)
+      : 0;
 
     const averageDailySpend = totalExpenses / daysElapsed;
 
@@ -141,7 +144,7 @@ export const getDashboard = async (req, res) => {
         averageDailySpend: Math.round(averageDailySpend * 100) / 100,
         averageDailyCalories: Math.round(averageDailyCalories),
         calorieGoal: req.user.calorieGoal,
-        monthlyBudget: req.user.monthlyBudget,
+        monthlyBudget: effectiveBudget,
         currency: req.user.currency,
         projectedMonthlySpend: Math.round(projectedMonthlySpend * 100) / 100,
         daysElapsed,

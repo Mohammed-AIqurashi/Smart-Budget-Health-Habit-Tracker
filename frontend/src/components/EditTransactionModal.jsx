@@ -24,12 +24,19 @@ const EditTransactionModal = ({ transaction, onClose, onSuccess }) => {
     setLoading(true);
 
     try {
+      let updatedTimestamp;
+      if (formData.date) {
+        const orig = new Date(transaction.timestamp);
+        const [year, month, day] = formData.date.split('-').map(Number);
+        updatedTimestamp = new Date(year, month - 1, day, orig.getHours(), orig.getMinutes(), orig.getSeconds()).toISOString();
+      }
+
       const payload = {
         amount: parseFloat(formData.amount),
         category: formData.category,
         type: formData.type,
         note: formData.note || undefined,
-        timestamp: formData.date ? new Date(formData.date).toISOString() : undefined,
+        timestamp: updatedTimestamp,
       };
 
       await api.put(`/transactions/${transaction.id}`, payload);
@@ -45,10 +52,10 @@ const EditTransactionModal = ({ transaction, onClose, onSuccess }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg animate-slide-up">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Edit Transaction</h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100">
+      <div className="relative bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl w-full max-w-lg animate-slide-up">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Edit Transaction</h2>
+          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500">
             <X className="w-5 h-5" />
           </button>
         </div>
